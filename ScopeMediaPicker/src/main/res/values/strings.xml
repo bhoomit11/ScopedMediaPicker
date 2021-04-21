@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="select_capture_image">Select Image</string>
+    <string name="file_provider_name" translatable="false">.fileProvider</string>
+</resources>

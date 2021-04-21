@@ -1,0 +1,3 @@
+include ':ScopeMediaPicker'
+include ':app'
+rootProject.name = "ScopeMediaPicker"
