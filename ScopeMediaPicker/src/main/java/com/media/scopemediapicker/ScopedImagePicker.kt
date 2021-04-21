@@ -86,8 +86,8 @@ public class ScopedImagePicker(
         list: MutableList<Intent>,
         intent: Intent
     ): MutableList<Intent> {
-        val resInfo = activity?.packageManager?.queryIntentActivities(intent, 0) ?: arrayListOf()
-        for (resolveInfo in resInfo) {
+        val resInfo = activity?.packageManager?.queryIntentActivities(intent, 0)
+        for (resolveInfo in resInfo!!) {
             val packageName = resolveInfo.activityInfo.packageName
             val targetedIntent = Intent(intent)
             targetedIntent.setPackage(packageName)
