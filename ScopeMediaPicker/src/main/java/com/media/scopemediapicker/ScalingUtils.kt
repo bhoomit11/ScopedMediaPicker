@@ -2,38 +2,48 @@ package com.media.scopemediapicker
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.*
+import android.media.ExifInterface
 import android.net.Uri
+import android.os.Build
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+
 
 /**
  * Utility function for decoding an image resource. The decoded bitmap will
  * be optimized for further scaling to the requested destination dimensions
  * and scaling logic.
  *
- * @param res The resources object containing the image data
- * @param resId The resource id of the image data
- * @param dstWidth Width of destination area
- * @param dstHeight Height of destination area
- * @param scalingLogic Logic to use to avoid image stretching
+ * @param dstWidth
+ * Width of destination area
+ * @param dstHeight
+ * Height of destination area
+ * @param scalingLogic
+ * Logic to use to avoid image stretching
  * @return Decoded bitmap
  */
 fun decodeResource(
-    res: Resources,
-    resId: Int,
+    filePath: String,
     dstWidth: Int,
     dstHeight: Int,
     scalingLogic: ScalingLogic
 ): Bitmap {
-    val options = BitmapFactory.Options()
-    options.inJustDecodeBounds = true
-    BitmapFactory.decodeResource(res, resId, options)
-    options.inJustDecodeBounds = false
-    options.inSampleSize = calculateSampleSize(
-        options.outWidth, options.outHeight, dstWidth,
-        dstHeight, scalingLogic
+
+    val bmOptions = BitmapFactory.Options()
+    bmOptions.inJustDecodeBounds = true
+    BitmapFactory.decodeFile(filePath, bmOptions)
+
+    bmOptions.inJustDecodeBounds = false
+    bmOptions.inSampleSize = calculateSampleSize(
+        bmOptions.outWidth,
+        bmOptions.outHeight,
+        dstWidth,
+        dstHeight,
+        scalingLogic
     )
 
-    return BitmapFactory.decodeResource(res, resId, options)
+    return BitmapFactory.decodeFile(filePath, bmOptions)
 }
 
 fun decodeFile(
@@ -90,6 +100,216 @@ fun createScaledBitmap(
 
     return scaledBitmap
 }
+
+
+fun getScaledImagePath(
+    mContext: Context,
+    imageUploadMaxWidth: Int,
+    imageUploadMaxHeight: Int,
+    path: String
+): String {
+    val previewBitmap = getResizeImage(
+        mContext,
+        imageUploadMaxWidth,
+        imageUploadMaxHeight,
+        ScalingLogic.FIT,
+        false,
+        path,
+        null
+    )
+    val file = bitmapToFile(
+        previewBitmap,
+        mContext.cacheDir.path + "/" + +System.currentTimeMillis() + ".jpg"
+    )
+    return if (file != null) file.path else path
+}
+
+
+/**
+ * to convert bitmap to file.
+ */
+fun bitmapToFile(bitmap: Bitmap?, dstPath: String): File? {
+    return try {
+        val file = File(dstPath)
+        if (file.exists()) file.delete()
+        file.createNewFile()
+        val fOut: FileOutputStream
+        fOut = FileOutputStream(file)
+        bitmap!!.compress(Bitmap.CompressFormat.JPEG, 70, fOut)
+        fOut.flush()
+        fOut.close()
+        file
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+
+}
+
+
+/**
+ * This method is used to resize image
+ *
+ * @param context
+ * @param dstWidth
+ * @param dstHeight
+ * @param scalingLogic
+ * @param rotationNeeded
+ * @param currentPhotoPath
+ * @return scaledBitmap
+ */
+fun getResizeImage(
+    context: Context,
+    dstWidth: Int,
+    dstHeight: Int,
+    scalingLogic: ScalingLogic,
+    rotationNeeded: Boolean,
+    currentPhotoPath: String,
+    IMAGE_CAPTURE_URI: Uri?
+): Bitmap? {
+    var rotate = 0
+    try {
+        val imageFile = File(currentPhotoPath)
+
+        val exif = ExifInterface(imageFile.absolutePath)
+        val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.STREAM_TYPE_FULL_IMAGE_DATA)
+
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_270 -> rotate = 270
+            ExifInterface.ORIENTATION_ROTATE_180 -> rotate = 180
+            ExifInterface.ORIENTATION_ROTATE_90 -> rotate = 90
+        }
+    } catch (e: IOException) {
+        e.printStackTrace()
+    }
+
+
+    try {
+        val bmOptions = BitmapFactory.Options()
+        bmOptions.inJustDecodeBounds = true
+        BitmapFactory.decodeFile(currentPhotoPath, bmOptions)
+        bmOptions.inJustDecodeBounds = false
+        return if (bmOptions.outWidth < dstWidth && bmOptions.outHeight < dstHeight) {
+            val bitmap: Bitmap = BitmapFactory.decodeFile(currentPhotoPath, bmOptions)
+            getRotatedBitmap(
+                setSelectedImage(
+                    bitmap,
+                    context,
+                    currentPhotoPath,
+                    IMAGE_CAPTURE_URI!!
+                ), rotate
+            )
+        } else {
+            var unscaledBitmap = decodeResource(currentPhotoPath, dstWidth, dstHeight, scalingLogic)
+            val matrix = Matrix()
+            if (rotationNeeded) {
+                matrix.setRotate(
+                    getCameraPhotoOrientation(
+                        context,
+                        Uri.fromFile(File(currentPhotoPath)),
+                        currentPhotoPath
+                    ).toFloat()
+                )
+                unscaledBitmap = Bitmap.createBitmap(
+                    unscaledBitmap,
+                    0,
+                    0,
+                    unscaledBitmap.width,
+                    unscaledBitmap.height,
+                    matrix,
+                    false
+                )
+            }
+            val scaledBitmap = createScaledBitmap(unscaledBitmap, dstWidth, dstHeight, scalingLogic)
+            unscaledBitmap.recycle()
+            getRotatedBitmap(scaledBitmap, rotate)
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return null
+    }
+}
+
+/**
+ * This method is used get orientation of camera photo
+ *
+ * @param context
+ * @param imageUri  This parameter is Uri type
+ * @param imagePath This parameter is String type
+ * @return rotate
+ */
+private fun getCameraPhotoOrientation(context: Context, imageUri: Uri?, imagePath: String): Int {
+    var rotate = 0
+    try {
+        try {
+            if (imageUri != null) context.contentResolver.notifyChange(imageUri, null)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        val imageFile = File(imagePath)
+        val exif = ExifInterface(imageFile.absolutePath)
+        val orientation =
+            exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_270 -> rotate = 270
+            ExifInterface.ORIENTATION_ROTATE_180 -> rotate = 180
+            ExifInterface.ORIENTATION_ROTATE_90 -> rotate = 90
+            ExifInterface.ORIENTATION_NORMAL -> rotate = 0
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+
+    return rotate
+}
+
+
+fun getRotatedBitmap(bitmap: Bitmap, rotate: Int): Bitmap {
+    return if (rotate == 0) {
+        bitmap
+    } else {
+        val mat = Matrix()
+        mat.postRotate(rotate.toFloat())
+        Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, mat, true)
+    }
+}
+
+
+fun setSelectedImage(
+    orignalBitmap: Bitmap,
+    context: Context,
+    imagePath: String,
+    IMAGE_CAPTURE_URI: Uri
+): Bitmap {
+    try {
+        val manufacturer = Build.MANUFACTURER
+        val model = Build.MODEL
+        return if (manufacturer.equals("samsung", ignoreCase = true) || model.equals(
+                "samsung",
+                ignoreCase = true
+            )
+        ) {
+            rotateBitmap(context, orignalBitmap, imagePath, IMAGE_CAPTURE_URI)
+        } else {
+            orignalBitmap
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return orignalBitmap
+    }
+
+}
+
+
+fun rotateBitmap(context: Context, bit: Bitmap, imagePath: String, IMAGE_CAPTURE_URI: Uri): Bitmap {
+
+    val rotation = getCameraPhotoOrientation(context, IMAGE_CAPTURE_URI, imagePath)
+    val matrix = Matrix()
+    matrix.postRotate(rotation.toFloat())
+    return Bitmap.createBitmap(bit, 0, 0, bit.width, bit.height, matrix, true)
+}
+
 
 /**
  * ScalingLogic defines how scaling should be carried out if source and

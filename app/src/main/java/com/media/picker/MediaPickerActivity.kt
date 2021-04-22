@@ -13,7 +13,6 @@ class MediaPickerActivity : AppCompatActivity() {
     private val scopedMediaPicker by lazy {
         ScopedImagePicker(
             activity = this@MediaPickerActivity,
-            requiresCompress = true,
             requiresCrop = true,
             allowMultipleImages = true
         )

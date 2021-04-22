@@ -11,4 +11,10 @@
             <data android:mimeType="vnd.android.cursor.dir/image" />
         </intent>
     </queries>
+    <application>
+    <activity
+        android:name="com.yalantis.ucrop.UCropActivity"
+        android:screenOrientation="portrait"
+        android:theme="@style/UCROPTheme" />
+    </application>
 </manifest>

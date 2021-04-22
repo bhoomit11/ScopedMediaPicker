@@ -2,6 +2,7 @@ package com.media.scopemediapicker
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -14,6 +15,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import com.yalantis.ucrop.UCrop
+import com.yalantis.ucrop.UCropActivity
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -23,7 +26,6 @@ import java.io.File
 public class ScopedImagePicker(
     val activity: AppCompatActivity? = null,
     val fragment: Fragment? = null,
-    val requiresCompress: Boolean = true,
     val requiresCrop: Boolean = true,
     val allowMultipleImages: Boolean = false
 ) {
@@ -32,11 +34,16 @@ public class ScopedImagePicker(
     companion object {
         const val REQ_CAPTURE = 1001
         const val RES_IMAGE = 1002
+        const val IMAGE_CROP_REQUEST_CODE = 1234
     }
 
     private var imageUri: Uri? = null
     private var imgPath: String = ""
     var onMediaChoose: (path: String) -> Unit = { path -> }
+
+    val filePaths by lazy {
+        FilePaths(fragment?.requireContext() ?: activity as Context)
+    }
 
     private val permissions = arrayOf(Manifest.permission.CAMERA)
 
@@ -169,6 +176,14 @@ public class ScopedImagePicker(
                     handleImageRequest(data)
                 }
             }
+            IMAGE_CROP_REQUEST_CODE->{
+                if(resultCode == Activity.RESULT_OK && data != null) {
+                    val resultUri = UCrop.getOutput(data)
+                    val imagePath = resultUri?.path ?: ""
+
+                    onMediaChoose(imagePath)
+                }
+            }
         }
     }
 
@@ -189,17 +204,62 @@ public class ScopedImagePicker(
                     compressedPath =
                         activity?.compressImageFile(queryImageUrl, false, imageUri!!) ?: ""
                 } else {
-                    queryImageUrl = imgPath
-                    compressedPath = imgPath
-                    activity?.compressImageFile(compressedPath, uri = imageUri!!) ?: ""
+                    compressedPath = getScaledImagePath(activity!!,1024,1024,imgPath)
                 }
 
-                if (requiresCompress) {
-                    onMediaChoose.invoke(compressedPath)
+
+                if (requiresCrop) {
+                    val destinationFile = File(
+                            filePaths.getLocalDirectory(
+                                    type = TYPES.LOCAL_CACHE_DIRECTORY
+                            )?.path + "/" + File(compressedPath).name
+                    )
+                    destinationFile.createNewFile()
+                    //Cropping
+
+                    val options = UCrop.Options()
+                    options.setAllowedGestures(
+                            UCropActivity.SCALE,
+                            UCropActivity.NONE,
+                            UCropActivity.SCALE
+                    )
+                    options.setToolbarColor(
+                            ContextCompat.getColor(
+                                    activity ?: fragment?.requireContext()!!,
+                                    R.color.crop_toolbar_color
+                            )
+                    )
+                    options.setStatusBarColor(
+                            ContextCompat.getColor(
+                                    activity ?: fragment?.requireContext()!!,
+                                    R.color.crop_statusbar_color
+                            )
+                    )
+                    options.setHideBottomControls(true)
+
+                    if (activity != null) {
+                        activity.startActivityForResult(
+                                UCrop.of(
+                                        Uri.fromFile(File(compressedPath)),
+                                        Uri.fromFile(destinationFile)
+                                ).withOptions(options).withAspectRatio(1f, 1f).getIntent(activity)
+                                ,  IMAGE_CROP_REQUEST_CODE
+                        )
+                    } else {
+                        fragment?.startActivityForResult(
+                                UCrop.of(
+                                        Uri.fromFile(File(compressedPath)),
+                                        Uri.fromFile(destinationFile)
+                                ).withOptions(options).withAspectRatio(
+                                        1f,
+                                        1f
+                                ).getIntent(fragment.requireContext())
+                                , IMAGE_CROP_REQUEST_CODE
+                        )
+                    }
                 } else {
-                    onMediaChoose.invoke(queryImageUrl )
+                    onMediaChoose.invoke(compressedPath)
                 }
-
             }
 
 

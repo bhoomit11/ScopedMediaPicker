@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name="crop_statusbar_color">#ffffff</color>
+    <color name="crop_toolbar_color">#ffffff</color>
+</resources>
