@@ -2,5 +2,7 @@
 <resources>
 
     <string name="select_capture_image">Select Image</string>
+    <string name="select_capture_video">Select Video</string>
     <string name="file_provider_name" translatable="false">.fileProvider</string>
+    <string name="select_media_type">Select Media Type</string>
 </resources>

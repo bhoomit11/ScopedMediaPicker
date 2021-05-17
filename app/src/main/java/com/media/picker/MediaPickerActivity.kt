@@ -2,19 +2,25 @@ package com.media.picker
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.widget.MediaController
+import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.media.scopemediapicker.ScopedImagePicker
+import com.media.scopemediapicker.ScopedMediaPicker
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.File
+
 
 class MediaPickerActivity : AppCompatActivity() {
 
     private val scopedMediaPicker by lazy {
-        ScopedImagePicker(
+        ScopedMediaPicker(
             activity = this@MediaPickerActivity,
             requiresCrop = true,
-            allowMultipleImages = true
+            allowMultipleImages = true,
+            mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO
         )
     }
 
@@ -22,15 +28,32 @@ class MediaPickerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         btn_capture.setOnClickListener {
-            scopedMediaPicker.start {
-                Glide.with(this@MediaPickerActivity)
-                    .asBitmap()
-                    .diskCacheStrategy(DiskCacheStrategy.NONE)
-                    .skipMemoryCache(true)
-                    .load(it)
-                    .into(iv_img)
+            videoView.visibility = View.GONE
+            iv_img.visibility = View.GONE
+            scopedMediaPicker.start { path, type ->
+                if (type == ScopedMediaPicker.MEDIA_TYPE_IMAGE) {
+                    Glide.with(this@MediaPickerActivity)
+                        .asBitmap()
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .skipMemoryCache(true)
+                        .load(path)
+                        .into(iv_img)
+
+                    iv_img.visibility = View.VISIBLE
+                } else {
+                    previewVideo(File(path))
+                }
             }
         }
+    }
+
+    fun previewVideo(file: File) {
+        videoView.setVideoPath(file.absolutePath)
+        val mediaController = MediaController(this)
+        videoView.setMediaController(mediaController)
+        mediaController.setMediaPlayer(videoView)
+        videoView.visibility = View.VISIBLE
+        videoView.start()
     }
 
     override fun onRequestPermissionsResult(

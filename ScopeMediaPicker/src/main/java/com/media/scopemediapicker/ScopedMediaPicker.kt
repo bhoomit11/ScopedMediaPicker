@@ -10,11 +10,14 @@ import android.os.Build
 import android.os.Environment
 import android.os.Parcelable
 import android.provider.MediaStore
+import android.view.View
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import com.media.scopemediapicker.utils.BottomSheetDialogFragmentHelperView
 import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -23,23 +26,28 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.io.File
 
-public class ScopedImagePicker(
+class ScopedMediaPicker(
     val activity: AppCompatActivity? = null,
     val fragment: Fragment? = null,
     val requiresCrop: Boolean = true,
-    val allowMultipleImages: Boolean = false
+    val allowMultipleImages: Boolean = false,
+    val mediaType: Int
 ) {
 
 
     companion object {
         const val REQ_CAPTURE = 1001
         const val RES_IMAGE = 1002
+        const val RES_VIDEO = 1003
         const val IMAGE_CROP_REQUEST_CODE = 1234
+
+        const val MEDIA_TYPE_IMAGE = 1
+        const val MEDIA_TYPE_VIDEO = 2
     }
 
     private var imageUri: Uri? = null
     private var imgPath: String = ""
-    var onMediaChoose: (path: String) -> Unit = { path -> }
+    lateinit var onMediaChoose: (path: String, type: Int) -> Unit
 
     val filePaths by lazy {
         FilePaths(fragment?.requireContext() ?: activity as Context)
@@ -47,10 +55,51 @@ public class ScopedImagePicker(
 
     private val permissions = arrayOf(Manifest.permission.CAMERA)
 
-    fun start(onMediaChoose: (path: String) -> Unit) {
+    fun start(onMediaChoose: (path: String, type: Int) -> Unit) {
         this.onMediaChoose = onMediaChoose
         if (isPermissionsAllowed(permissions)) {
-            chooseImage()
+
+            if (mediaType and MEDIA_TYPE_IMAGE == MEDIA_TYPE_IMAGE && mediaType and MEDIA_TYPE_VIDEO == MEDIA_TYPE_VIDEO) {
+                selectMediaDialog()
+            } else {
+                if (mediaType and MEDIA_TYPE_IMAGE == MEDIA_TYPE_IMAGE) {
+                    chooseImage()
+                }
+                if (mediaType and MEDIA_TYPE_VIDEO == MEDIA_TYPE_VIDEO) {
+                    chooseVideo()
+                }
+
+            }
+        }
+    }
+
+    private fun selectMediaDialog() {
+        if (activity != null || fragment != null) {
+            BottomSheetDialogFragmentHelperView.with(
+                R.layout.dialog_media_picker,
+                isCancellable = true,
+                isCancellableOnTouchOutSide = true
+            ) { it, dialog ->
+
+                val llImageCamera = it.findViewById<LinearLayout>(R.id.llImageCamera)
+                val llVideoCamera = it.findViewById<LinearLayout>(R.id.llVideoCamera)
+
+
+                llImageCamera.setOnClickListener {
+                    chooseImage()
+                    dialog.dismiss()
+                }
+                llVideoCamera.setOnClickListener {
+                    chooseVideo()
+                    dialog.dismiss()
+                }
+
+            }.show(
+                if (activity != null) activity.supportFragmentManager else fragment!!.childFragmentManager,
+                "filepicker"
+            )
+        } else {
+            throw RuntimeException("It Seems activity is not set")
         }
     }
 
@@ -58,6 +107,36 @@ public class ScopedImagePicker(
         activity?.startActivityForResult(getPickImageIntent(), RES_IMAGE)
     }
 
+    private fun chooseVideo() {
+        activity?.startActivityForResult(getPickVideoIntent(), RES_VIDEO)
+    }
+
+    private fun getPickVideoIntent(): Intent? {
+        var chooserIntent: Intent? = null
+
+        var intentList: MutableList<Intent> = ArrayList()
+
+        val pickIntent = Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+
+        val takeVideoIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
+        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, setImageUri())
+
+        intentList = addIntentsToList(intentList, pickIntent)
+        intentList = addIntentsToList(intentList, takeVideoIntent)
+
+        if (intentList.size > 0) {
+            chooserIntent = Intent.createChooser(
+                intentList.removeAt(intentList.size - 1),
+                activity?.getString(R.string.select_capture_video)
+            )
+            chooserIntent?.putExtra(
+                Intent.EXTRA_INITIAL_INTENTS,
+                intentList.toTypedArray<Parcelable>()
+            )
+        }
+
+        return chooserIntent
+    }
 
     private fun getPickImageIntent(): Intent? {
         var chooserIntent: Intent? = null
@@ -65,6 +144,9 @@ public class ScopedImagePicker(
         var intentList: MutableList<Intent> = ArrayList()
 
         val pickIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        if (allowMultipleImages) {
+            pickIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        }
 
         val takePhotoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, setImageUri())
@@ -176,13 +258,37 @@ public class ScopedImagePicker(
                     handleImageRequest(data)
                 }
             }
-            IMAGE_CROP_REQUEST_CODE->{
-                if(resultCode == Activity.RESULT_OK && data != null) {
+            RES_VIDEO -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    handleVideoRequest(data)
+                }
+            }
+            IMAGE_CROP_REQUEST_CODE -> {
+                if (resultCode == Activity.RESULT_OK && data != null) {
                     val resultUri = UCrop.getOutput(data)
                     val imagePath = resultUri?.path ?: ""
 
-                    onMediaChoose(imagePath)
+                    onMediaChoose(imagePath, MEDIA_TYPE_IMAGE)
                 }
+            }
+        }
+    }
+
+    /*
+     * Handle the data URI once video is back to user
+     */
+    private fun handleVideoRequest(data: Intent?) {
+        val exceptionHandler = CoroutineExceptionHandler { _, t ->
+            t.printStackTrace()
+        }
+
+        var videoPath = ""
+        GlobalScope.launch(Dispatchers.Main + exceptionHandler) {
+            if (data?.data != null) {     //Photo from gallery
+                val videoUri = data.data!!
+                videoPath = activity?.getVideoPath(videoUri) ?: ""
+
+                onMediaChoose(videoPath, MEDIA_TYPE_VIDEO)
             }
         }
     }
@@ -197,70 +303,68 @@ public class ScopedImagePicker(
         var queryImageUrl: String
         var compressedPath: String
 
-            GlobalScope.launch(Dispatchers.Main + exceptionHandler) {
-                if (data?.data != null) {     //Photo from gallery
-                    val imageUri = data.data
-                    queryImageUrl = imageUri?.path?:""
-                    compressedPath =
-                        activity?.compressImageFile(queryImageUrl, false, imageUri!!) ?: ""
-                } else {
-                    compressedPath = getScaledImagePath(activity!!,1024,1024,imgPath)
-                }
-
-
-                if (requiresCrop) {
-                    val destinationFile = File(
-                            filePaths.getLocalDirectory(
-                                    type = TYPES.LOCAL_CACHE_DIRECTORY
-                            )?.path + "/" + File(compressedPath).name
-                    )
-                    destinationFile.createNewFile()
-                    //Cropping
-
-                    val options = UCrop.Options()
-                    options.setAllowedGestures(
-                            UCropActivity.SCALE,
-                            UCropActivity.NONE,
-                            UCropActivity.SCALE
-                    )
-                    options.setToolbarColor(
-                            ContextCompat.getColor(
-                                    activity ?: fragment?.requireContext()!!,
-                                    R.color.crop_toolbar_color
-                            )
-                    )
-                    options.setStatusBarColor(
-                            ContextCompat.getColor(
-                                    activity ?: fragment?.requireContext()!!,
-                                    R.color.crop_statusbar_color
-                            )
-                    )
-                    options.setHideBottomControls(true)
-
-                    if (activity != null) {
-                        activity.startActivityForResult(
-                                UCrop.of(
-                                        Uri.fromFile(File(compressedPath)),
-                                        Uri.fromFile(destinationFile)
-                                ).withOptions(options).withAspectRatio(1f, 1f).getIntent(activity)
-                                ,  IMAGE_CROP_REQUEST_CODE
-                        )
-                    } else {
-                        fragment?.startActivityForResult(
-                                UCrop.of(
-                                        Uri.fromFile(File(compressedPath)),
-                                        Uri.fromFile(destinationFile)
-                                ).withOptions(options).withAspectRatio(
-                                        1f,
-                                        1f
-                                ).getIntent(fragment.requireContext())
-                                , IMAGE_CROP_REQUEST_CODE
-                        )
-                    }
-                } else {
-                    onMediaChoose.invoke(compressedPath)
-                }
+        GlobalScope.launch(Dispatchers.Main + exceptionHandler) {
+            if (data?.data != null) {     //Photo from gallery
+                val imageUri = data.data
+                queryImageUrl = imageUri?.path ?: ""
+                compressedPath =
+                    activity?.compressImageFile(queryImageUrl, false, imageUri!!) ?: ""
+            } else {
+                compressedPath = getScaledImagePath(activity!!, 1024, 1024, imgPath)
             }
+
+
+            if (requiresCrop) {
+                val destinationFile = File(
+                    filePaths.getLocalDirectory(
+                        type = TYPES.LOCAL_CACHE_DIRECTORY
+                    )?.path + "/" + File(compressedPath).name
+                )
+                destinationFile.createNewFile()
+                //Cropping
+
+                val options = UCrop.Options()
+                options.setAllowedGestures(
+                    UCropActivity.SCALE,
+                    UCropActivity.NONE,
+                    UCropActivity.SCALE
+                )
+                options.setToolbarColor(
+                    ContextCompat.getColor(
+                        activity ?: fragment?.requireContext()!!,
+                        R.color.crop_toolbar_color
+                    )
+                )
+                options.setStatusBarColor(
+                    ContextCompat.getColor(
+                        activity ?: fragment?.requireContext()!!,
+                        R.color.crop_statusbar_color
+                    )
+                )
+                options.setHideBottomControls(true)
+
+                if (activity != null) {
+                    activity.startActivityForResult(
+                        UCrop.of(
+                            Uri.fromFile(File(compressedPath)),
+                            Uri.fromFile(destinationFile)
+                        ).withOptions(options).withAspectRatio(1f, 1f).getIntent(activity), IMAGE_CROP_REQUEST_CODE
+                    )
+                } else {
+                    fragment?.startActivityForResult(
+                        UCrop.of(
+                            Uri.fromFile(File(compressedPath)),
+                            Uri.fromFile(destinationFile)
+                        ).withOptions(options).withAspectRatio(
+                            1f,
+                            1f
+                        ).getIntent(fragment.requireContext()), IMAGE_CROP_REQUEST_CODE
+                    )
+                }
+            } else {
+                onMediaChoose.invoke(compressedPath, MEDIA_TYPE_IMAGE)
+            }
+        }
 
 
     }
