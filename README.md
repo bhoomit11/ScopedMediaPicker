@@ -39,15 +39,15 @@ Step 3. Initialize your media picker
 
 Okay so let's discuss step 3,
 To initlaize media picker you need to add several configuration as per you requirement like  
-> **Activity** - If you're using your media player in activity, give your activity instance here, so it will give you callback in this same acivity for override method _onRequestPermissionsResult_ and _onActivityResult_, also this will used as context in library, so even with the fragment this one is required parameter
+> **activity** - If you're using your media player in activity, give your activity instance here, so it will give you callback in this same acivity for override method _onRequestPermissionsResult_ and _onActivityResult_, also this will used as context in library, so even with the fragment this one is required parameter
 >
-> Fragment - If you're using your media player in fargment, give your fragment instance here, so it will give you callback in this same fragment for override method _onRequestPermissionsResult_ and _onActivityResult_,
+> **fragment** - If you're using your media player in fargment, give your fragment instance here, so it will give you callback in this same fragment for override method _onRequestPermissionsResult_ and _onActivityResult_,
 >
-> requiresCrop - If require crop fuctionality on your picked image you can pass this as true, **please note** this won't work with allowMultipleImages as true, it works only for single pick image like select profile picture, so if this param is true then allowMultipleImages should be false.
+> **requiresCrop** - If require crop fuctionality on your picked image you can pass this as true, **please note** this won't work with allowMultipleImages as true, it works only for single pick image like select profile picture, so if this param is true then allowMultipleImages should be false.
 >
-> allowMultipleImages - If require multiple image pickup
+> **allowMultipleImages** - If require multiple image pickup
 >
-> mediaType - this is required parameter,  
+> **mediaType** - this is required parameter,  
 >>_ScopedMediaPicker.MEDIA_TYPE_IMAGE_ for image picker only  
 >>_ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for video picker only  
 >>_ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for both
@@ -75,6 +75,6 @@ but what if _allowMultipleImages_ is true, no worries you just have to call anot
 
 You'll get you list of image paths in pathList ArrayList.
 
-So yeah, that's it, check exampe in GIT repo for more  
+So yeah, that's it, check example in GIT repo for more  
 and keep posting you reviews   
 Happy Coding :)
