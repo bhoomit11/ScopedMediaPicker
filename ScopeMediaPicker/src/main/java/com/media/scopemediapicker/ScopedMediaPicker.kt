@@ -46,6 +46,7 @@ class ScopedMediaPicker(
 
     private var imageUri: Uri? = null
     private var imgPath: String = ""
+    var mediaType: Int = MEDIA_TYPE_IMAGE
     lateinit var onMediaChoose: (path: String, type: Int) -> Unit
     lateinit var onMediaChooseMultiple: (pathList: ArrayList<String>, type: Int) -> Unit
 
@@ -56,6 +57,7 @@ class ScopedMediaPicker(
     private val permissions = arrayOf(Manifest.permission.CAMERA)
 
     fun start(mediaType:Int,onMediaChoose: (path: String, type: Int) -> Unit) {
+        this.mediaType = mediaType
         this.onMediaChoose = onMediaChoose
         if (isPermissionsAllowed(permissions)) {
 
@@ -402,7 +404,17 @@ class ScopedMediaPicker(
         when (requestCode) {
             REQ_CAPTURE -> {
                 if (isAllPermissionsGranted(grantResults)) {
-                    chooseImage()
+                    if (mediaType and MEDIA_TYPE_IMAGE == MEDIA_TYPE_IMAGE && mediaType and MEDIA_TYPE_VIDEO == MEDIA_TYPE_VIDEO) {
+                        selectMediaDialog()
+                    } else {
+                        if (mediaType and MEDIA_TYPE_IMAGE == MEDIA_TYPE_IMAGE) {
+                            chooseImage()
+                        }
+                        if (mediaType and MEDIA_TYPE_VIDEO == MEDIA_TYPE_VIDEO) {
+                            chooseVideo()
+                        }
+
+                    }
                 } else {
                     Toast.makeText(
                         activity,
