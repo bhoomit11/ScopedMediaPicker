@@ -29,8 +29,7 @@ class ScopedMediaPicker(
     val activity: AppCompatActivity?,
     val fragment: Fragment? = null,
     val requiresCrop: Boolean = false,
-    val allowMultipleImages: Boolean = false,
-    val mediaType: Int
+    val allowMultipleImages: Boolean = false
 ) {
 
 
@@ -56,7 +55,7 @@ class ScopedMediaPicker(
 
     private val permissions = arrayOf(Manifest.permission.CAMERA)
 
-    fun start(onMediaChoose: (path: String, type: Int) -> Unit) {
+    fun start(mediaType:Int,onMediaChoose: (path: String, type: Int) -> Unit) {
         this.onMediaChoose = onMediaChoose
         if (isPermissionsAllowed(permissions)) {
 
@@ -74,7 +73,7 @@ class ScopedMediaPicker(
         }
     }
 
-    fun startForMultiple(onMediaChooseMultiple: (pathList: ArrayList<String>, type: Int) -> Unit) {
+    fun startForMultiple(mediaType: Int,onMediaChooseMultiple: (pathList: ArrayList<String>, type: Int) -> Unit) {
         this.onMediaChooseMultiple = onMediaChooseMultiple
         if (isPermissionsAllowed(permissions)) {
 
