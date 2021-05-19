@@ -74,8 +74,25 @@ but what if _allowMultipleImages_ is true, no worries you just have to call anot
     }
 
 You'll get you list of image paths in pathList ArrayList.
+Now Last final step but not least
 
-So yeah, that's it, check example in GIT repo for more  
+Step 5. Return intent data to your ScopedMediaPicker, if you don't follow this step callback will not return you scaled image in _start_ calback.
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        scopedMediaPicker.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        scopedMediaPicker.onActivityResult(requestCode, resultCode, data)
+    }
+
+So yeah, that's it, check example in GIT repo for more
 and keep posting you reviews   
 Happy Coding :)
 
