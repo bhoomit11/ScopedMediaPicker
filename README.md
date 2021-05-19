@@ -22,7 +22,7 @@ Add it in your root build.gradle at the end of repositories:
 Step 2. Add the dependency
 
     dependencies {
-            implementation 'com.github.bhoomit11:ScopedMediaPicker:Tag'
+            implementation 'com.github.bhoomit11:ScopedMediaPicker:0.0.6'
     }
 
 Step 3. Initialize your media picker
