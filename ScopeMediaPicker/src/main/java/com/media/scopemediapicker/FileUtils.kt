@@ -1,9 +1,12 @@
 package com.media.scopemediapicker
 
+import android.R.attr.data
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ClipData
 import android.content.ContentUris
 import android.content.Context
+import android.content.Intent
 import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -15,11 +18,13 @@ import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.text.TextUtils
 import android.util.Log
+import android.widget.Toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
 
 private const val tag = "FileUtils"
@@ -99,6 +104,7 @@ suspend fun Activity.compressImageFile(
     }
 
 }
+
 
 @Throws(IOException::class)
 fun Context.getBitmapFromUri(uri: Uri, options: BitmapFactory.Options? = null): Bitmap? {
@@ -225,10 +231,10 @@ fun Activity.getVideoPath(uri: Uri): String? {
             )
         }
         if (isGoogleDriveUri(uri)) {
-            return getDriveFilePath(uri,this)
+            return getDriveFilePath(uri, this)
         }
         if (isWhatsAppFile(uri)) {
-            return getFilePathForWhatsApp(uri,this)
+            return getFilePathForWhatsApp(uri, this)
         }
         if ("content".equals(uri.scheme, ignoreCase = true)) {
             if (isGooglePhotosUri(uri)) {
@@ -240,7 +246,7 @@ fun Activity.getVideoPath(uri: Uri): String? {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
 
                 // return getFilePathFromURI(context,uri);
-                copyFileToInternalStorage(uri, "userfiles",this)
+                copyFileToInternalStorage(uri, "userfiles", this)
                 // return getRealPathFromURI(context,uri);
             } else {
                 getDataColumn(this, uri, null, null)
@@ -317,10 +323,10 @@ private fun getDriveFilePath(uri: Uri, activity: Activity): String? {
      *     * move to the first row in the Cursor, get the data,
      *     * and display it.
      * */
-    val nameIndex: Int = returnCursor?.getColumnIndex(OpenableColumns.DISPLAY_NAME)?:-1
-    val sizeIndex: Int = returnCursor?.getColumnIndex(OpenableColumns.SIZE)?:-1
+    val nameIndex: Int = returnCursor?.getColumnIndex(OpenableColumns.DISPLAY_NAME) ?: -1
+    val sizeIndex: Int = returnCursor?.getColumnIndex(OpenableColumns.SIZE) ?: -1
     returnCursor?.moveToFirst()
-    val name: String = returnCursor?.getString(nameIndex)?:""
+    val name: String = returnCursor?.getString(nameIndex) ?: ""
     val size = returnCursor?.getLong(sizeIndex).toString()
     val file = File(activity.cacheDir, name)
     try {
@@ -332,7 +338,7 @@ private fun getDriveFilePath(uri: Uri, activity: Activity): String? {
 
         //int bufferSize = 1024;
         val bufferSize = bytesAvailable?.coerceAtMost(maxBufferSize)
-        val buffers = ByteArray(bufferSize?:-1)
+        val buffers = ByteArray(bufferSize ?: -1)
         while (inputStream?.read(buffers)?.also { read = it } != -1) {
             outputStream.write(buffers, 0, read)
         }
@@ -366,8 +372,8 @@ private fun copyFileToInternalStorage(uri: Uri, newDirName: String, activity: Ac
      *     * move to the first row in the Cursor, get the data,
      *     * and display it.
      * */
-    val nameIndex = returnCursor?.getColumnIndex(OpenableColumns.DISPLAY_NAME)?:-1
-    val sizeIndex = returnCursor?.getColumnIndex(OpenableColumns.SIZE)?:-1
+    val nameIndex = returnCursor?.getColumnIndex(OpenableColumns.DISPLAY_NAME) ?: -1
+    val sizeIndex = returnCursor?.getColumnIndex(OpenableColumns.SIZE) ?: -1
     returnCursor?.moveToFirst()
     val name = returnCursor?.getString(nameIndex)
     val size = returnCursor?.getLong(sizeIndex).toString()
@@ -416,7 +422,7 @@ private fun getDataColumn(context: Context, uri: Uri?, selection: String?, selec
             return cursor.getString(index)
         }
     } finally {
-        if (cursor != null) cursor.close()
+        cursor?.close()
     }
     return null
 }
@@ -443,4 +449,42 @@ fun isWhatsAppFile(uri: Uri): Boolean {
 
 private fun isGoogleDriveUri(uri: Uri): Boolean {
     return "com.google.android.apps.docs.storage" == uri.authority || "com.google.android.apps.docs.storage.legacy" == uri.authority
+}
+
+fun Activity.getMediaImagePaths(data: Intent): ArrayList<String> {
+    try {
+        // When an Image is picked
+        // Get the Image from data
+        val filePathColumn = arrayOf(MediaStore.Images.Media.DATA)
+        val imagesEncodedList = ArrayList<String>()
+        var imageEncoded = ""
+
+        if (data.clipData != null) {
+            val mClipData = data.clipData!!
+            val mArrayUri = ArrayList<Uri>()
+            for (i in 0 until mClipData.itemCount) {
+                val item = mClipData.getItemAt(i)
+                val uri = item?.uri!!
+                mArrayUri.add(uri)
+                // Get the cursor
+                val cursor = contentResolver.query(uri, filePathColumn, null, null, null)
+                // Move to first row
+                cursor?.moveToFirst()
+                val columnIndex = cursor?.getColumnIndex(filePathColumn[0]) ?: 0
+                imageEncoded = cursor?.getString(columnIndex) ?: ""
+                imagesEncodedList.add(imageEncoded)
+                cursor?.close()
+            }
+            Log.v("LOG_TAG", "Selected Images" + mArrayUri.size)
+        }
+
+
+        return imagesEncodedList
+
+    } catch (e: java.lang.Exception) {
+        Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG)
+            .show()
+
+        return arrayListOf()
+    }
 }

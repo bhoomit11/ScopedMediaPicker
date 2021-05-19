@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.Environment
 import android.os.Parcelable
 import android.provider.MediaStore
-import android.view.View
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -36,9 +35,10 @@ class ScopedMediaPicker(
 
 
     companion object {
-        const val REQ_CAPTURE = 1001
-        const val RES_IMAGE = 1002
-        const val RES_VIDEO = 1003
+        const val REQ_CAPTURE = 1101
+        const val RES_IMAGE = 1102
+        const val RES_MULTI_IMAGE = 1103
+        const val RES_VIDEO = 1104
         const val IMAGE_CROP_REQUEST_CODE = 1234
 
         const val MEDIA_TYPE_IMAGE = 1
@@ -48,6 +48,7 @@ class ScopedMediaPicker(
     private var imageUri: Uri? = null
     private var imgPath: String = ""
     lateinit var onMediaChoose: (path: String, type: Int) -> Unit
+    lateinit var onMediaChooseMultiple: (pathList: ArrayList<String>, type: Int) -> Unit
 
     val filePaths by lazy {
         FilePaths(fragment?.requireContext() ?: activity as Context)
@@ -57,6 +58,24 @@ class ScopedMediaPicker(
 
     fun start(onMediaChoose: (path: String, type: Int) -> Unit) {
         this.onMediaChoose = onMediaChoose
+        if (isPermissionsAllowed(permissions)) {
+
+            if (mediaType and MEDIA_TYPE_IMAGE == MEDIA_TYPE_IMAGE && mediaType and MEDIA_TYPE_VIDEO == MEDIA_TYPE_VIDEO) {
+                selectMediaDialog()
+            } else {
+                if (mediaType and MEDIA_TYPE_IMAGE == MEDIA_TYPE_IMAGE) {
+                    chooseImage()
+                }
+                if (mediaType and MEDIA_TYPE_VIDEO == MEDIA_TYPE_VIDEO) {
+                    chooseVideo()
+                }
+
+            }
+        }
+    }
+
+    fun startForMultiple(onMediaChooseMultiple: (pathList: ArrayList<String>, type: Int) -> Unit) {
+        this.onMediaChooseMultiple = onMediaChooseMultiple
         if (isPermissionsAllowed(permissions)) {
 
             if (mediaType and MEDIA_TYPE_IMAGE == MEDIA_TYPE_IMAGE && mediaType and MEDIA_TYPE_VIDEO == MEDIA_TYPE_VIDEO) {
@@ -95,7 +114,7 @@ class ScopedMediaPicker(
                 }
 
             }.show(
-                if (activity != null) activity.supportFragmentManager else fragment!!.childFragmentManager,
+                activity?.supportFragmentManager ?: fragment!!.childFragmentManager,
                 "filepicker"
             )
         } else {
@@ -104,7 +123,7 @@ class ScopedMediaPicker(
     }
 
     private fun chooseImage() {
-        activity?.startActivityForResult(getPickImageIntent(), RES_IMAGE)
+        activity?.startActivityForResult(getPickImageIntent(), if(allowMultipleImages) RES_MULTI_IMAGE else RES_IMAGE)
     }
 
     private fun chooseVideo() {
@@ -258,6 +277,14 @@ class ScopedMediaPicker(
                     handleImageRequest(data)
                 }
             }
+            RES_MULTI_IMAGE -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    if(data!=null){
+                        val imagePathList = activity?.getMediaImagePaths(data)
+                        imagePathList?.let { onMediaChooseMultiple(it, MEDIA_TYPE_IMAGE) }
+                    }
+                }
+            }
             RES_VIDEO -> {
                 if (resultCode == Activity.RESULT_OK) {
                     handleVideoRequest(data)
@@ -365,8 +392,6 @@ class ScopedMediaPicker(
                 onMediaChoose.invoke(compressedPath, MEDIA_TYPE_IMAGE)
             }
         }
-
-
     }
 
 

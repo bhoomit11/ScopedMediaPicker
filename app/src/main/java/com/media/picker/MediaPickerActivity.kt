@@ -2,6 +2,7 @@ package com.media.picker
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.MediaController
 import android.widget.VideoView
@@ -27,9 +28,11 @@ class MediaPickerActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        videoView.visibility = View.GONE
+        iv_img.visibility = View.GONE
+
         btn_capture.setOnClickListener {
-            videoView.visibility = View.GONE
-            iv_img.visibility = View.GONE
             scopedMediaPicker.start { path, type ->
                 if (type == ScopedMediaPicker.MEDIA_TYPE_IMAGE) {
                     Glide.with(this@MediaPickerActivity)
@@ -44,6 +47,10 @@ class MediaPickerActivity : AppCompatActivity() {
                     previewVideo(File(path))
                 }
             }
+
+//            scopedMediaPicker.startForMultiple { pathList, type ->
+//                Log.e("List",pathList.toString())
+//            }
         }
     }
 
