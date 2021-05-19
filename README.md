@@ -77,7 +77,7 @@ You'll get you list of image paths in pathList ArrayList.
 Now Last final step but not least
 
 ### Step 5. Return intent data to your ScopedMediaPicker,
-if you don't follow this step callback will not return you scaled image in _start_ calback.
+if you don't follow this step callback will not return you scaled image/video in _start_ calback.
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
