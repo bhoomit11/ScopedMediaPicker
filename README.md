@@ -8,7 +8,7 @@ It also allow multiple image pick and also allow to crop image functionality in 
 
 follow simple instruction below 
 
-#####Step 1. Add the JitPack repository to your build file
+### Step 1. Add the JitPack repository to your build file
 
 Add it in your root build.gradle at the end of repositories:
 
@@ -19,13 +19,13 @@ Add it in your root build.gradle at the end of repositories:
         }
     }
 
-#####Step 2. Add the dependency
+### Step 2. Add the dependency
 
     dependencies {
             implementation 'com.github.bhoomit11:ScopedMediaPicker:0.0.6'
     }
 
-#####Step 3. Initialize your media picker
+### Step 3. Initialize your media picker
 
     private val scopedMediaPicker by lazy {
         ScopedMediaPicker(
@@ -52,7 +52,7 @@ To initialize media picker you need to add several configuration as per you requ
 >>_ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for video picker only  
 >>_ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for both
 
-#####Step 4. Start picking up your media
+### Step 4. Start picking up your media
 
     btn_capture.setOnClickListener {
 
@@ -76,7 +76,7 @@ but what if _allowMultipleImages_ is true, no worries you just have to call anot
 You'll get you list of image paths in pathList ArrayList.
 Now Last final step but not least
 
-#####Step 5. Return intent data to your ScopedMediaPicker, if you don't follow this step callback will not return you scaled image in _start_ calback.
+### Step 5. Return intent data to your ScopedMediaPicker, if you don't follow this step callback will not return you scaled image in _start_ calback.
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
