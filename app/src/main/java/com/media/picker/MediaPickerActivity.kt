@@ -54,7 +54,7 @@ class MediaPickerActivity : AppCompatActivity() {
         }
     }
 
-    fun previewVideo(file: File) {
+    private fun previewVideo(file: File) {
         videoView.setVideoPath(file.absolutePath)
         val mediaController = MediaController(this)
         videoView.setMediaController(mediaController)

@@ -26,9 +26,9 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 class ScopedMediaPicker(
-    val activity: AppCompatActivity? = null,
+    val activity: AppCompatActivity?,
     val fragment: Fragment? = null,
-    val requiresCrop: Boolean = true,
+    val requiresCrop: Boolean = false,
     val allowMultipleImages: Boolean = false,
     val mediaType: Int
 ) {
