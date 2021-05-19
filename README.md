@@ -76,7 +76,8 @@ but what if _allowMultipleImages_ is true, no worries you just have to call anot
 You'll get you list of image paths in pathList ArrayList.
 Now Last final step but not least
 
-### Step 5. Return intent data to your ScopedMediaPicker, if you don't follow this step callback will not return you scaled image in _start_ calback.
+### Step 5. Return intent data to your ScopedMediaPicker,
+if you don't follow this step callback will not return you scaled image in _start_ calback.
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
