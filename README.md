@@ -93,6 +93,35 @@ if you don't follow this step callback will not return you scaled image/video in
         scopedMediaPicker.onActivityResult(requestCode, resultCode, data)
     }
 
+
+Dont forgot to add provider meta-data in manifest as well
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileProvider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
+
+
+#### provider_paths.xml
+
+    <?xml version="1.0" encoding="utf-8"?>
+    <paths>
+        <external-cache-path
+            name="external_cache_files"
+            path="." />
+        <external-files-path
+            name="external_files_files"
+            path="." />
+        <external-path
+            name="external_files"
+            path="." />
+    </paths>
+
 So yeah, that's it, check example in GIT repo for more
 and keep posting you reviews   
 Happy Coding :)
