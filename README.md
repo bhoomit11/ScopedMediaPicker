@@ -61,9 +61,10 @@ To initialize media picker you need to add several configuration as per you requ
     }
 
 Now here you get path as string for your picked image/video, also you need to pass mediaType parameter here
+
 > **mediaType** - this is required parameter,
->>_ScopedMediaPicker.MEDIA_TYPE_IMAGE_ for image picker only
->>_ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for video picker only
+>>_ScopedMediaPicker.MEDIA_TYPE_IMAGE_ for image picker only  
+>>_ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for video picker only  
 >>_ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for both
 
 Now what if _allowMultipleImages_ is true, no worries you just have to call another call back for that in ScopedMediaPicker
