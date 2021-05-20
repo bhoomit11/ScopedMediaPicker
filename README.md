@@ -33,7 +33,6 @@ Add it in your root build.gradle at the end of repositories:
             fragment = this@MediaPickerFragment  // Optional, Only if used with fragment
             requiresCrop = true, // Optional
             allowMultipleImages = true, // Optional
-            mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO
         )
     }
 
@@ -46,17 +45,12 @@ To initialize media picker you need to add several configuration as per you requ
 > **requiresCrop** - If need crop functionality on your picked image you can pass this as true, **please note** this won't work with allowMultipleImages as true, it works only for single pick image like select profile picture, so if this param is true then allowMultipleImages should be false.
 >
 > **allowMultipleImages** - If need multiple image pickup
->
-> **mediaType** - this is required parameter,  
->>_ScopedMediaPicker.MEDIA_TYPE_IMAGE_ for image picker only  
->>_ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for video picker only  
->>_ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for both
 
 ### Step 4. Start picking up your media
 
     btn_capture.setOnClickListener {
 
-        scopedMediaPicker.start { path, type ->
+        scopedMediaPicker.start(mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO) { path, type ->
             if (type == ScopedMediaPicker.MEDIA_TYPE_IMAGE) {
                 // You get your image path here
             } else {
@@ -66,10 +60,15 @@ To initialize media picker you need to add several configuration as per you requ
 
     }
 
-Now here you get path as string for your picked image/video
-but what if _allowMultipleImages_ is true, no worries you just have to call another call back for that in ScopedMediaPicker
+Now here you get path as string for your picked image/video, also you need to pass mediaType parameter here
+> **mediaType** - this is required parameter,
+>>_ScopedMediaPicker.MEDIA_TYPE_IMAGE_ for image picker only
+>>_ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for video picker only
+>>_ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for both
 
-    scopedMediaPicker.startForMultiple { pathList, type ->
+Now what if _allowMultipleImages_ is true, no worries you just have to call another call back for that in ScopedMediaPicker
+
+    scopedMediaPicker.startForMultiple(mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO) { pathList, type ->
         Log.e("List",pathList.toString())
     }
 
