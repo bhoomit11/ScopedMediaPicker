@@ -32,7 +32,9 @@ class MediaPickerActivity : AppCompatActivity() {
         iv_img.visibility = View.GONE
 
         btn_capture.setOnClickListener {
-            scopedMediaPicker.start(mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO) { path, type ->
+            scopedMediaPicker.start(
+                mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO
+            ) { path, type ->
                 if (type == ScopedMediaPicker.MEDIA_TYPE_IMAGE) {
                     Glide.with(this@MediaPickerActivity)
                         .asBitmap()
