@@ -1,6 +1,5 @@
-package com.media.scopemediapicker
+package com.media.scopemediapicker.utils
 import android.content.Context
-import android.content.res.Resources
 import android.graphics.*
 import android.media.ExifInterface
 import android.net.Uri

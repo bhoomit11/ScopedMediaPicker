@@ -1,15 +1,17 @@
 package com.media.picker
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.MediaController
-import android.widget.VideoView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.media.scopemediapicker.ScopedMediaPicker
+import com.media.scopemediapicker.model.FileData
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 
@@ -20,7 +22,7 @@ class MediaPickerActivity : AppCompatActivity() {
         ScopedMediaPicker(
             activity = this@MediaPickerActivity,
             requiresCrop = true,
-            allowMultipleImages = true
+            allowMultipleImages = false
         )
     }
 
@@ -31,27 +33,42 @@ class MediaPickerActivity : AppCompatActivity() {
         videoView.visibility = View.GONE
         iv_img.visibility = View.GONE
 
-        btn_capture.setOnClickListener {
-            scopedMediaPicker.start(
-                mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO
+        btnCapture.setOnClickListener {
+            scopedMediaPicker.startMediaPicker(
+                mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE or
+                        ScopedMediaPicker.MEDIA_TYPE_VIDEO
             ) { path, type ->
-                if (type == ScopedMediaPicker.MEDIA_TYPE_IMAGE) {
-                    Glide.with(this@MediaPickerActivity)
-                        .asBitmap()
-                        .diskCacheStrategy(DiskCacheStrategy.NONE)
-                        .skipMemoryCache(true)
-                        .load(path)
-                        .into(iv_img)
+                when (type) {
+                    ScopedMediaPicker.MEDIA_TYPE_IMAGE -> {
+                        Glide.with(this@MediaPickerActivity)
+                            .asBitmap()
+                            .diskCacheStrategy(DiskCacheStrategy.NONE)
+                            .skipMemoryCache(true)
+                            .load(path.first())
+                            .into(iv_img)
 
-                    iv_img.visibility = View.VISIBLE
-                } else {
-                    previewVideo(File(path))
+                        iv_img.visibility = View.VISIBLE
+                    }
+                    ScopedMediaPicker.MEDIA_TYPE_VIDEO -> {
+                        previewVideo(File(path.first()))
+                    }
                 }
             }
-
-//            scopedMediaPicker.startForMultiple { pathList, type ->
-//                Log.e("List",pathList.toString())
-//            }
+        }
+        btnFile.setOnClickListener {
+            scopedMediaPicker.startFilePicker(
+                fileTypes = arrayListOf(
+                    ScopedMediaPicker.PDF,
+                    ScopedMediaPicker.DOC,
+                    ScopedMediaPicker.PPT,
+                    ScopedMediaPicker.XLS,
+                    ScopedMediaPicker.TXT,
+                    ScopedMediaPicker.ZIP
+                )
+            ) { list ->
+                Log.e("FilePath", list.toString())
+                showFile(list.first())
+            }
         }
     }
 
@@ -76,5 +93,18 @@ class MediaPickerActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         scopedMediaPicker.onActivityResult(requestCode, resultCode, data)
+    }
+
+    private fun showFile(fileData: FileData) {
+        try {
+
+            val intent = Intent()
+            intent.action = Intent.ACTION_VIEW
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            intent.setDataAndType(fileData.fileUri, fileData.mimeType)
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(this, "No activity found to open this attachment.", Toast.LENGTH_LONG).show()
+        }
     }
 }

@@ -1,9 +1,7 @@
-package com.media.scopemediapicker
+package com.media.scopemediapicker.utils
 
-import android.R.attr.data
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.ClipData
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
@@ -451,6 +449,46 @@ private fun isGoogleDriveUri(uri: Uri): Boolean {
     return "com.google.android.apps.docs.storage" == uri.authority || "com.google.android.apps.docs.storage.legacy" == uri.authority
 }
 
+fun Context.getRealPath(uri: Uri?): String? {
+    val docId = DocumentsContract.getDocumentId(uri)
+    val split = docId.split(":").toTypedArray()
+    val type = split[0]
+    val contentUri: Uri = when (type) {
+        "image" -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        "video" -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+        "audio" -> MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        else -> MediaStore.Files.getContentUri("external")
+    }
+    val selection = "_id=?"
+    val selectionArgs = arrayOf(
+        split[1]
+    )
+    return getRealDataColumn(this, contentUri, selection, selectionArgs)
+}
+
+fun getRealDataColumn(context: Context, uri: Uri?, selection: String?, selectionArgs: Array<String>?): String? {
+    var cursor: Cursor? = null
+    val column = "_data"
+    val projection = arrayOf(
+        column
+    )
+    try {
+        cursor = context.contentResolver.query(uri!!, projection, selection, selectionArgs, null)
+        if (cursor != null && cursor.moveToFirst()) {
+            val column_index = cursor.getColumnIndexOrThrow(column)
+            val value = cursor.getString(column_index)
+            return if (value.startsWith("content://") || !value.startsWith("/") && !value.startsWith("file://")) {
+                null
+            } else value
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    } finally {
+        cursor?.close()
+    }
+    return null
+}
+
 fun Activity.getMediaImagePaths(data: Intent): ArrayList<String> {
     try {
         // When an Image is picked
@@ -487,4 +525,24 @@ fun Activity.getMediaImagePaths(data: Intent): ArrayList<String> {
 
         return arrayListOf()
     }
+}
+
+
+fun Context.getFileName(uri: Uri): String {
+
+    val cursor: Cursor? = this.contentResolver.query(
+        uri, null, null, null, null, null
+    )
+    var displayName = ""
+    cursor?.use {
+        if (it.moveToFirst()) {
+            // Note it's called "Display Name". This is
+            // provider-specific, and might not necessarily be the file name.
+            displayName =
+                it.getString(it.getColumnIndex(OpenableColumns.DISPLAY_NAME))
+            Log.i("Filename---> :", "Display Name: $displayName")
+
+        }
+    }
+    return displayName
 }

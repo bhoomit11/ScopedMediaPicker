@@ -85,5 +85,32 @@
                 android:textColor="#666666"
                 android:textStyle="bold" />
         </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/llAttachFile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:visibility="gone"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:background="@drawable/circle_black"
+                android:backgroundTint="#eaeaea"
+                android:padding="16dp"
+                android:tint="#666666"
+                app:srcCompat="@drawable/ic_attach_file" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="File"
+                android:textColor="#666666"
+                android:textStyle="bold" />
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>

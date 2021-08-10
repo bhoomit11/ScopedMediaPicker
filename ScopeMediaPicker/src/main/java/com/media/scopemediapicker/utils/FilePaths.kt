@@ -1,4 +1,4 @@
-package com.media.scopemediapicker
+package com.media.scopemediapicker.utils
 
 import android.content.Context
 import android.os.Build
@@ -144,5 +144,11 @@ class FilePaths(val context: Context) {
         val endIndex = Math.min(lastQMPos, lastHashPos)
         val fileName = url.substring(startIndex, endIndex)
         return fileName
+    }
+}
+
+fun String?.ifNotBlank(func: (String) -> Unit) {
+    if (this != null && this.trim().isNotEmpty()) {
+        func(this)
     }
 }

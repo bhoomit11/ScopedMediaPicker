@@ -11,14 +11,14 @@
         android:id="@+id/iv_img"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@id/btn_capture"
+        app:layout_constraintBottom_toTopOf="@id/btnCapture"
         app:layout_constraintTop_toTopOf="parent" />
 
     <VideoView
         android:id="@+id/videoView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@id/btn_capture"
+        app:layout_constraintBottom_toTopOf="@id/btnCapture"
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.core.widget.ContentLoadingProgressBar
@@ -27,20 +27,28 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@+id/btn_capture"
+        app:layout_constraintBottom_toBottomOf="@+id/btnCapture"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:visibility="visible" />
 
     <Button
-        android:id="@+id/btn_capture"
+        android:id="@+id/btnCapture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:text="Capture/Gallery"
+        app:layout_constraintBottom_toTopOf="@id/btnFile"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
+    <Button
+        android:id="@+id/btnFile"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dp"
-        android:text="Capture/Gallery"
+        android:text="Pick File"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>

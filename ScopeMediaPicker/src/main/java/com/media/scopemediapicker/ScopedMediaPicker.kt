@@ -10,13 +10,15 @@ import android.os.Build
 import android.os.Environment
 import android.os.Parcelable
 import android.provider.MediaStore
+import android.webkit.MimeTypeMap
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
-import com.media.scopemediapicker.utils.BottomSheetDialogFragmentHelperView
+import com.media.scopemediapicker.model.FileData
+import com.media.scopemediapicker.utils.*
 import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -39,16 +41,28 @@ class ScopedMediaPicker(
         const val RES_MULTI_IMAGE = 1103
         const val RES_VIDEO = 1104
         const val IMAGE_CROP_REQUEST_CODE = 1234
+        const val RES_FILE = 1105
+        const val RES_MULTI_FILE = 1106
 
         const val MEDIA_TYPE_IMAGE = 1
         const val MEDIA_TYPE_VIDEO = 2
+
+        // Mime Types
+        val PDF = Pair("PDF", arrayOf("application/pdf"))
+        val DOC = Pair("DOC/DOCX", arrayOf("application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+        val PPT = Pair("PPT/PPTX", arrayOf("application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"))
+        val XLS = Pair("XLS/XLSX", arrayOf("application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+        val TXT = Pair("TEXT", arrayOf("text/plain"))
+        val ZIP = Pair("ZIP", arrayOf("application/zip"))
+
     }
 
     private var imageUri: Uri? = null
     private var imgPath: String = ""
     var mediaType: Int = MEDIA_TYPE_IMAGE
-    lateinit var onMediaChoose: (path: String, type: Int) -> Unit
-    lateinit var onMediaChooseMultiple: (pathList: ArrayList<String>, type: Int) -> Unit
+    var fileTypes: ArrayList<Pair<String, Array<String>>> = arrayListOf()
+    lateinit var onMediaChoose: (pathList: ArrayList<String>, type: Int) -> Unit
+    lateinit var onFileChoose: (fileList: ArrayList<FileData>) -> Unit
 
     val filePaths by lazy {
         FilePaths(fragment?.requireContext() ?: activity as Context)
@@ -56,9 +70,9 @@ class ScopedMediaPicker(
 
     private val permissions = arrayOf(Manifest.permission.CAMERA)
 
-    fun start(mediaType:Int,onMediaChoose: (path: String, type: Int) -> Unit) {
+    fun startMediaPicker(mediaType: Int, onMediaChooseMultiple: (pathList: ArrayList<String>, type: Int) -> Unit) {
         this.mediaType = mediaType
-        this.onMediaChoose = onMediaChoose
+        this.onMediaChoose = onMediaChooseMultiple
         if (isPermissionsAllowed(permissions)) {
 
             if (mediaType and MEDIA_TYPE_IMAGE == MEDIA_TYPE_IMAGE && mediaType and MEDIA_TYPE_VIDEO == MEDIA_TYPE_VIDEO) {
@@ -75,23 +89,48 @@ class ScopedMediaPicker(
         }
     }
 
-    fun startForMultiple(mediaType: Int,onMediaChooseMultiple: (pathList: ArrayList<String>, type: Int) -> Unit) {
-        this.onMediaChooseMultiple = onMediaChooseMultiple
-        if (isPermissionsAllowed(permissions)) {
-
-            if (mediaType and MEDIA_TYPE_IMAGE == MEDIA_TYPE_IMAGE && mediaType and MEDIA_TYPE_VIDEO == MEDIA_TYPE_VIDEO) {
-                selectMediaDialog()
-            } else {
-                if (mediaType and MEDIA_TYPE_IMAGE == MEDIA_TYPE_IMAGE) {
-                    chooseImage()
-                }
-                if (mediaType and MEDIA_TYPE_VIDEO == MEDIA_TYPE_VIDEO) {
-                    chooseVideo()
-                }
-
-            }
-        }
+    fun startFilePicker(fileTypes: ArrayList<Pair<String, Array<String>>> = arrayListOf(), onFileChoose: (fileList: ArrayList<FileData>) -> Unit) {
+        this.fileTypes = fileTypes
+        this.onFileChoose = onFileChoose
+        chooseFile()
     }
+
+    /*
+     * Choose single or multiple files
+     */
+    private fun chooseFile() {
+        val fragmentManager = fragment?.childFragmentManager ?: activity?.supportFragmentManager
+        val activity = activity ?: fragment?.requireActivity() as Activity
+
+        if (fileTypes.size == 1) {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+            intent.type = "*/*"
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, fileTypes.first().second)
+            intent.addFlags(intent.flags or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            if (allowMultipleImages) {
+                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+            }
+            activity.startActivityForResult(intent, if (allowMultipleImages) RES_MULTI_FILE else RES_FILE)
+        } else {
+            BottomDialogSpinner.with(activity, fileTypes)
+                .setMap { value: Pair<String, Array<String>> -> value.first }
+                .setEnableSearch(false)
+                .setTitle("Select File Type")
+                .setOnValueSelectedCallback { model ->
+                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+                    intent.type = "*/*"
+                    intent.putExtra(Intent.EXTRA_MIME_TYPES, model.second)
+                    intent.addFlags(intent.flags or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    if (allowMultipleImages) {
+                        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                    }
+                    activity.startActivityForResult(intent, if (allowMultipleImages) RES_MULTI_FILE else RES_FILE)
+                }.build().show(fragmentManager!!)
+
+        }
+
+    }
+
 
     private fun selectMediaDialog() {
         if (activity != null || fragment != null) {
@@ -103,7 +142,6 @@ class ScopedMediaPicker(
 
                 val llImageCamera = it.findViewById<LinearLayout>(R.id.llImageCamera)
                 val llVideoCamera = it.findViewById<LinearLayout>(R.id.llVideoCamera)
-
 
                 llImageCamera.setOnClickListener {
                     chooseImage()
@@ -124,9 +162,10 @@ class ScopedMediaPicker(
     }
 
     private fun chooseImage() {
-        activity?.startActivityForResult(getPickImageIntent(), if(allowMultipleImages) RES_MULTI_IMAGE else RES_IMAGE)
+        activity?.startActivityForResult(getPickImageIntent(), if (allowMultipleImages) RES_MULTI_IMAGE else RES_IMAGE)
     }
 
+    @SuppressWarnings("deprecation")
     private fun chooseVideo() {
         activity?.startActivityForResult(getPickVideoIntent(), RES_VIDEO)
     }
@@ -268,10 +307,14 @@ class ScopedMediaPicker(
             pendingPermissions.toArray(array)
             activity?.requestPermissions(array, REQ_CAPTURE)
         }
+
+
     }
 
 
     fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        val activity = activity ?: fragment?.requireActivity() as Activity
+
         when (requestCode) {
             RES_IMAGE -> {
                 if (resultCode == Activity.RESULT_OK) {
@@ -280,9 +323,56 @@ class ScopedMediaPicker(
             }
             RES_MULTI_IMAGE -> {
                 if (resultCode == Activity.RESULT_OK) {
-                    if(data!=null){
-                        val imagePathList = activity?.getMediaImagePaths(data)
-                        imagePathList?.let { onMediaChooseMultiple(it, MEDIA_TYPE_IMAGE) }
+                    if (data != null) {
+                        val imagePathList = activity.getMediaImagePaths(data)
+                        imagePathList.let { onMediaChoose(it, MEDIA_TYPE_IMAGE) }
+                    }
+                }
+            }
+            RES_FILE -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    if (data != null) {
+                        val docUri = data.data
+
+                        activity.contentResolver.takePersistableUriPermission(docUri!!, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        val fileData = FileData()
+
+                        val mimeType = activity.contentResolver.getType(docUri)
+                        fileData.mimeType = mimeType
+                        fileData.fileExtension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
+                        fileData.fileName = activity.getFileName(docUri)
+                        fileData.fileUri = docUri
+                        activity.contentResolver.openInputStream(docUri).use { inputStream ->
+                            fileData.fileInputStream = inputStream
+                        }
+                        onFileChoose(arrayListOf(fileData))
+                    }
+                }
+            }
+            RES_MULTI_FILE -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    if (data?.clipData != null) {
+                        val mClipData = data.clipData!!
+                        val mArrayUri = ArrayList<Uri?>()
+                        val list: ArrayList<FileData> = arrayListOf()
+                        for (i in 0 until mClipData.itemCount) {
+                            val item = mClipData.getItemAt(i)
+                            mArrayUri.add(item?.uri)
+                            val docUri = data.data
+
+
+                            val fileData = FileData()
+                            fileData.fileUri = docUri
+
+                            activity.contentResolver.takePersistableUriPermission(docUri!!, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            activity.contentResolver.openInputStream(docUri).use { inputStream ->
+                                fileData.fileInputStream = inputStream
+                            }
+
+                            list.add(fileData)
+                        }
+
+                        onFileChoose(list)
                     }
                 }
             }
@@ -296,7 +386,7 @@ class ScopedMediaPicker(
                     val resultUri = UCrop.getOutput(data)
                     val imagePath = resultUri?.path ?: ""
 
-                    onMediaChoose(imagePath, MEDIA_TYPE_IMAGE)
+                    onMediaChoose(arrayListOf(imagePath), MEDIA_TYPE_IMAGE)
                 }
             }
         }
@@ -316,7 +406,7 @@ class ScopedMediaPicker(
                 val videoUri = data.data!!
                 videoPath = activity?.getVideoPath(videoUri) ?: ""
 
-                onMediaChoose(videoPath, MEDIA_TYPE_VIDEO)
+                onMediaChoose(arrayListOf(videoPath), MEDIA_TYPE_VIDEO)
             }
         }
     }
@@ -390,7 +480,7 @@ class ScopedMediaPicker(
                     )
                 }
             } else {
-                onMediaChoose.invoke(compressedPath, MEDIA_TYPE_IMAGE)
+                onMediaChoose.invoke(arrayListOf(compressedPath), MEDIA_TYPE_IMAGE)
             }
         }
     }
