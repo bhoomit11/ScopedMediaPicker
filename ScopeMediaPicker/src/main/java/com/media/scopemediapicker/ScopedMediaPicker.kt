@@ -353,21 +353,24 @@ class ScopedMediaPicker(
                 if (resultCode == Activity.RESULT_OK) {
                     if (data?.clipData != null) {
                         val mClipData = data.clipData!!
-                        val mArrayUri = ArrayList<Uri?>()
                         val list: ArrayList<FileData> = arrayListOf()
                         for (i in 0 until mClipData.itemCount) {
                             val item = mClipData.getItemAt(i)
-                            mArrayUri.add(item?.uri)
-                            val docUri = data.data
-
-
+                            val docUri = item?.uri
                             val fileData = FileData()
-                            fileData.fileUri = docUri
 
-                            activity.contentResolver.takePersistableUriPermission(docUri!!, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            activity.contentResolver.openInputStream(docUri).use { inputStream ->
-                                fileData.fileInputStream = inputStream
+                            if (docUri != null) {
+                                val mimeType = activity.contentResolver.getType(docUri)
+                                fileData.mimeType = mimeType
+                                fileData.fileExtension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
+                                fileData.fileName = activity.getFileName(docUri)
+
+                                activity.contentResolver.takePersistableUriPermission(docUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                activity.contentResolver.openInputStream(docUri).use { inputStream ->
+                                    fileData.fileInputStream = inputStream
+                                }
                             }
+                            fileData.fileUri = docUri
 
                             list.add(fileData)
                         }

@@ -22,7 +22,7 @@ class MediaPickerActivity : AppCompatActivity() {
         ScopedMediaPicker(
             activity = this@MediaPickerActivity,
             requiresCrop = true,
-            allowMultipleImages = false
+            allowMultipleImages = true
         )
     }
 
@@ -37,22 +37,24 @@ class MediaPickerActivity : AppCompatActivity() {
             scopedMediaPicker.startMediaPicker(
                 mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE or
                         ScopedMediaPicker.MEDIA_TYPE_VIDEO
-            ) { path, type ->
+            ) { pathList, type ->
                 when (type) {
                     ScopedMediaPicker.MEDIA_TYPE_IMAGE -> {
                         Glide.with(this@MediaPickerActivity)
                             .asBitmap()
                             .diskCacheStrategy(DiskCacheStrategy.NONE)
                             .skipMemoryCache(true)
-                            .load(path.first())
+                            .load(pathList.first())
                             .into(iv_img)
 
                         iv_img.visibility = View.VISIBLE
                     }
                     ScopedMediaPicker.MEDIA_TYPE_VIDEO -> {
-                        previewVideo(File(path.first()))
+                        previewVideo(File(pathList.first()))
                     }
                 }
+
+                Log.e("FilePath", pathList.toString())
             }
         }
         btnFile.setOnClickListener {
