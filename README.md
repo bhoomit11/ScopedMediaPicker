@@ -69,8 +69,8 @@ You'll get you list of image paths in pathList ArrayList. (First element in case
 Also you need to pass mediaType parameter here
 
 > **mediaType** - this is required parameter,
->>_ScopedMediaPicker.MEDIA_TYPE_IMAGE_ for image picker only
->>_ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for video picker only
+>>_ScopedMediaPicker.MEDIA_TYPE_IMAGE_ for image picker only  
+>>_ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for video picker only  
 >>_ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for both
 
 ### Step 4.1. Start picking up your files
@@ -93,10 +93,10 @@ Also you need to pass mediaType parameter here
 
 fileTypes defines array of support file types you want to pick with file picker
 You'll get you list of FileData object contains 5 things:
-> fileUri (To open document use this URI)
-> fileInputStream (To upload a file purpose use this Inputstream)
-> fileName
-> fileExtension
+> fileUri (To open document use this URI)  
+> fileInputStream (To upload a file purpose use this Inputstream)  
+> fileName  
+> fileExtension  
 > mimeType (While opening a URI with intent you can use this mimeType)
 
 ### Step 5. Return intent data to your ScopedMediaPicker,
