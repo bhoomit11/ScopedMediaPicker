@@ -48,33 +48,32 @@ To initialize media picker you need to add several configuration as per you requ
 
 ### Step 4. Start picking up your media
 
-    btn_capture.setOnClickListener {
+    btnCapture.setOnClickListener {
 
-        scopedMediaPicker.start(mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO) { path, type ->
-            if (type == ScopedMediaPicker.MEDIA_TYPE_IMAGE) {
-                // You get your image path here
-            } else {
-                // You get your video path here
-            }
-        }
+       scopedMediaPicker.startMediaPicker(
+               mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE or
+                           ScopedMediaPicker.MEDIA_TYPE_VIDEO
+           ) { pathList, type ->
+           when (type) {
+               ScopedMediaPicker.MEDIA_TYPE_IMAGE -> {
+               // Handle your images here
+               }
+               ScopedMediaPicker.MEDIA_TYPE_VIDEO -> {
+                // Handle your videos here
+               }
+           }
 
     }
 
-Now here you get path as string for your picked image/video, also you need to pass mediaType parameter here
+You'll get you list of image paths in pathList ArrayList. (First element in case of single pick)
+Also you need to pass mediaType parameter here
 
 > **mediaType** - this is required parameter,
->>_ScopedMediaPicker.MEDIA_TYPE_IMAGE_ for image picker only  
->>_ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for video picker only  
+>>_ScopedMediaPicker.MEDIA_TYPE_IMAGE_ for image picker only
+>>_ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for video picker only
 >>_ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO_ for both
 
-Now what if _allowMultipleImages_ is true, no worries you just have to call another call back for that in ScopedMediaPicker
 
-    scopedMediaPicker.startForMultiple(mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE or ScopedMediaPicker.MEDIA_TYPE_VIDEO) { pathList, type ->
-        Log.e("List",pathList.toString())
-    }
-
-You'll get you list of image paths in pathList ArrayList.
-Now Last final step but not least
 
 ### Step 5. Return intent data to your ScopedMediaPicker,
 if you don't follow this step callback will not return you scaled image/video in _start_ calback.
@@ -93,34 +92,6 @@ if you don't follow this step callback will not return you scaled image/video in
         scopedMediaPicker.onActivityResult(requestCode, resultCode, data)
     }
 
-
-Dont forgot to add provider meta-data in manifest as well
-
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileProvider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/provider_paths" />
-        </provider>
-
-
-#### provider_paths.xml
-
-    <?xml version="1.0" encoding="utf-8"?>
-    <paths>
-        <external-cache-path
-            name="external_cache_files"
-            path="." />
-        <external-files-path
-            name="external_files_files"
-            path="." />
-        <external-path
-            name="external_files"
-            path="." />
-    </paths>
 
 So yeah, that's it, check example in GIT repo for more
 and keep posting you reviews   
