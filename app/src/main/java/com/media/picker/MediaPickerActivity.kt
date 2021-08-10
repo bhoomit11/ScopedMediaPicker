@@ -22,7 +22,7 @@ class MediaPickerActivity : AppCompatActivity() {
         ScopedMediaPicker(
             activity = this@MediaPickerActivity,
             requiresCrop = true,
-            allowMultipleImages = true
+            allowMultipleImages = false
         )
     }
 
