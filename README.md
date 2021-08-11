@@ -88,8 +88,7 @@ Also you need to pass mediaType parameter here
                 ScopedMediaPicker.ZIP
             )
         ) { list ->
-            Log.e("FilePath", list.toString())
-            showFile(list.first())
+            // Handle your files here
         }
     }
 
