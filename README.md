@@ -1,10 +1,12 @@
 # ScopedMediaPicker
 
-ScopeMideaPicker is media picker for Image and Video which supports Android 10 & 11 file system (without requestLegacyExternalStorage flag), it includes both with camera/gallery and guess what, permissions are handled internally, yayy!
+ScopeMideaPicker is media picker for Image, Video which supports Android 10 & 11 file system (without requestLegacyExternalStorage flag), it includes both with camera/gallery and guess what, permissions are handled internally, yayy!
+
+Also added supports for File Picker with file types of your choice.
 
 You just need to call start method and return call back to library and that's it, your work is done amigos :)
 
-It also allow multiple image pick and also allow to crop image functionality in case of single pick (Typically used for profile picture pick)
+It also allow multiple image/video pick and also allow to crop image functionality in case of single pick (Typically used for profile picture pick)
 
 follow simple instruction below 
 
