@@ -244,12 +244,14 @@ class ScopedMediaPicker(
         return list
     }
 
-    /** Set default URI for capture image
-     *
+    /**
+     * Set default URI for capture image
      */
     private fun setImageUri(): Uri? {
         val folder = File("${activity?.getExternalFilesDir(Environment.DIRECTORY_DCIM)}")
-        folder.mkdirs()
+        if (!folder.exists()) {
+            folder.mkdirs()
+        }
 
         val file =
             File(folder, "${activity?.getApplicationName()}_${System.currentTimeMillis()}.png")
