@@ -31,7 +31,9 @@ class ScopedMediaPicker(
     val activity: AppCompatActivity?,
     val fragment: Fragment? = null,
     val requiresCrop: Boolean = false,
-    val allowMultipleImages: Boolean = false
+    val allowMultipleImages: Boolean = false,
+    val aspectRatioX:Float = 1f,
+    val aspectRatioY:Float  = 1f
 ) {
 
 
@@ -471,7 +473,7 @@ class ScopedMediaPicker(
                         UCrop.of(
                             Uri.fromFile(File(compressedPath)),
                             Uri.fromFile(destinationFile)
-                        ).withOptions(options).withAspectRatio(1f, 1f).getIntent(activity), IMAGE_CROP_REQUEST_CODE
+                        ).withOptions(options).withAspectRatio(aspectRatioX, aspectRatioY).getIntent(activity), IMAGE_CROP_REQUEST_CODE
                     )
                 } else {
                     fragment?.startActivityForResult(
@@ -479,8 +481,8 @@ class ScopedMediaPicker(
                             Uri.fromFile(File(compressedPath)),
                             Uri.fromFile(destinationFile)
                         ).withOptions(options).withAspectRatio(
-                            1f,
-                            1f
+                            aspectRatioX,
+                            aspectRatioY
                         ).getIntent(fragment.requireContext()), IMAGE_CROP_REQUEST_CODE
                     )
                 }
