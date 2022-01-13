@@ -31,9 +31,9 @@ class ScopedMediaPicker(
     val activity: AppCompatActivity?,
     val fragment: Fragment? = null,
     val requiresCrop: Boolean = false,
-    val allowMultipleImages: Boolean = false,
-    val aspectRatioX:Float = 1f,
-    val aspectRatioY:Float  = 1f
+    val allowMultipleFiles: Boolean = false,
+    val aspectRatioX: Float = 1f,
+    val aspectRatioY: Float = 1f
 ) {
 
 
@@ -45,6 +45,9 @@ class ScopedMediaPicker(
         const val IMAGE_CROP_REQUEST_CODE = 1234
         const val RES_FILE = 1105
         const val RES_MULTI_FILE = 1106
+
+        const val ACTION_TYPE_CAMERA = 1
+        const val ACTION_TYPE_GALLERY = 2
 
         const val MEDIA_TYPE_IMAGE = 1
         const val MEDIA_TYPE_VIDEO = 2
@@ -62,6 +65,7 @@ class ScopedMediaPicker(
     private var imageUri: Uri? = null
     private var imgPath: String = ""
     var mediaType: Int = MEDIA_TYPE_IMAGE
+    var actionType: Int = -1
     var fileTypes: ArrayList<Pair<String, Array<String>>> = arrayListOf()
     lateinit var onMediaChoose: (pathList: ArrayList<String>, type: Int) -> Unit
     lateinit var onFileChoose: (fileList: ArrayList<FileData>) -> Unit
@@ -72,8 +76,9 @@ class ScopedMediaPicker(
 
     private val permissions = arrayOf(Manifest.permission.CAMERA)
 
-    fun startMediaPicker(mediaType: Int, onMediaChooseMultiple: (pathList: ArrayList<String>, type: Int) -> Unit) {
+    fun startMediaPicker(mediaType: Int, actionType: Int, onMediaChooseMultiple: (pathList: ArrayList<String>, type: Int) -> Unit) {
         this.mediaType = mediaType
+        this.actionType = actionType
         this.onMediaChoose = onMediaChooseMultiple
         if (isPermissionsAllowed(permissions)) {
 
@@ -104,31 +109,41 @@ class ScopedMediaPicker(
         val fragmentManager = fragment?.childFragmentManager ?: activity?.supportFragmentManager
         val activity = activity ?: fragment?.requireActivity() as Activity
 
-        if (fileTypes.size == 1) {
+        if(fileTypes.isNotEmpty()) {
+            if (fileTypes.size == 1) {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+                intent.type = "*/*"
+                intent.putExtra(Intent.EXTRA_MIME_TYPES, fileTypes.first().second)
+                intent.addFlags(intent.flags or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                if (allowMultipleFiles) {
+                    intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                }
+                activity.startActivityForResult(intent, if (allowMultipleFiles) RES_MULTI_FILE else RES_FILE)
+            } else {
+                BottomDialogSpinner.with(activity, fileTypes)
+                    .setMap { value: Pair<String, Array<String>> -> value.first }
+                    .setEnableSearch(false)
+                    .setTitle("Select File Type")
+                    .setOnValueSelectedCallback { model ->
+                        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+                        intent.type = "*/*"
+                        intent.putExtra(Intent.EXTRA_MIME_TYPES, model.second)
+                        intent.addFlags(intent.flags or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        if (allowMultipleFiles) {
+                            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                        }
+                        activity.startActivityForResult(intent, if (allowMultipleFiles) RES_MULTI_FILE else RES_FILE)
+                    }.build().show(fragmentManager!!)
+
+            }
+        }else{
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
             intent.type = "*/*"
-            intent.putExtra(Intent.EXTRA_MIME_TYPES, fileTypes.first().second)
             intent.addFlags(intent.flags or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            if (allowMultipleImages) {
+            if (allowMultipleFiles) {
                 intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             }
-            activity.startActivityForResult(intent, if (allowMultipleImages) RES_MULTI_FILE else RES_FILE)
-        } else {
-            BottomDialogSpinner.with(activity, fileTypes)
-                .setMap { value: Pair<String, Array<String>> -> value.first }
-                .setEnableSearch(false)
-                .setTitle("Select File Type")
-                .setOnValueSelectedCallback { model ->
-                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
-                    intent.type = "*/*"
-                    intent.putExtra(Intent.EXTRA_MIME_TYPES, model.second)
-                    intent.addFlags(intent.flags or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    if (allowMultipleImages) {
-                        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-                    }
-                    activity.startActivityForResult(intent, if (allowMultipleImages) RES_MULTI_FILE else RES_FILE)
-                }.build().show(fragmentManager!!)
-
+            activity.startActivityForResult(intent, if (allowMultipleFiles) RES_MULTI_FILE else RES_FILE)
         }
 
     }
@@ -164,7 +179,7 @@ class ScopedMediaPicker(
     }
 
     private fun chooseImage() {
-        activity?.startActivityForResult(getPickImageIntent(), if (allowMultipleImages) RES_MULTI_IMAGE else RES_IMAGE)
+        activity?.startActivityForResult(getPickImageIntent(), if (allowMultipleFiles) RES_MULTI_IMAGE else RES_IMAGE)
     }
 
     @SuppressWarnings("deprecation")
@@ -181,6 +196,7 @@ class ScopedMediaPicker(
 
         val takeVideoIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
         takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, setImageUri())
+
 
         intentList = addIntentsToList(intentList, pickIntent)
         intentList = addIntentsToList(intentList, takeVideoIntent)
@@ -205,15 +221,19 @@ class ScopedMediaPicker(
         var intentList: MutableList<Intent> = ArrayList()
 
         val pickIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        if (allowMultipleImages) {
+        if (allowMultipleFiles) {
             pickIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         }
 
-        val takePhotoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, setImageUri())
+        if (actionType and ACTION_TYPE_CAMERA == ACTION_TYPE_CAMERA) {
+            val takePhotoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, setImageUri())
+            intentList = addIntentsToList(intentList, takePhotoIntent)
 
-        intentList = addIntentsToList(intentList, pickIntent)
-        intentList = addIntentsToList(intentList, takePhotoIntent)
+        }
+        if (actionType and ACTION_TYPE_GALLERY == ACTION_TYPE_GALLERY) {
+            intentList = addIntentsToList(intentList, pickIntent)
+        }
 
         if (intentList.size > 0) {
             chooserIntent = Intent.createChooser(

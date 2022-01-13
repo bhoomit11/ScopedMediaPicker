@@ -22,7 +22,7 @@ class MediaPickerActivity : AppCompatActivity() {
         ScopedMediaPicker(
             activity = this@MediaPickerActivity,
             requiresCrop = true,
-            allowMultipleImages = false
+            allowMultipleFiles = true
         )
     }
 
@@ -35,8 +35,8 @@ class MediaPickerActivity : AppCompatActivity() {
 
         btnCapture.setOnClickListener {
             scopedMediaPicker.startMediaPicker(
-                mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE or
-                        ScopedMediaPicker.MEDIA_TYPE_VIDEO
+                mediaType = ScopedMediaPicker.MEDIA_TYPE_IMAGE,
+                actionType = ScopedMediaPicker.ACTION_TYPE_GALLERY
             ) { pathList, type ->
                 when (type) {
                     ScopedMediaPicker.MEDIA_TYPE_IMAGE -> {
@@ -59,14 +59,6 @@ class MediaPickerActivity : AppCompatActivity() {
         }
         btnFile.setOnClickListener {
             scopedMediaPicker.startFilePicker(
-                fileTypes = arrayListOf(
-                    ScopedMediaPicker.PDF,
-                    ScopedMediaPicker.DOC,
-                    ScopedMediaPicker.PPT,
-                    ScopedMediaPicker.XLS,
-                    ScopedMediaPicker.TXT,
-                    ScopedMediaPicker.ZIP
-                )
             ) { list ->
                 Log.e("FilePath", list.toString())
                 showFile(list.first())
