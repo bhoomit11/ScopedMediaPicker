@@ -12,5 +12,6 @@ data class FileData(
 
     var fileName: String? = "",
     var fileExtension: String? = "",
-    var mimeType: String? = ""
+    var mimeType: String? = "",
+    var fileBytes: ByteArray? = null
 )

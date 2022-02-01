@@ -109,7 +109,7 @@ class ScopedMediaPicker(
         val fragmentManager = fragment?.childFragmentManager ?: activity?.supportFragmentManager
         val activity = activity ?: fragment?.requireActivity() as Activity
 
-        if(fileTypes.isNotEmpty()) {
+        if (fileTypes.isNotEmpty()) {
             if (fileTypes.size == 1) {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
                 intent.type = "*/*"
@@ -136,7 +136,7 @@ class ScopedMediaPicker(
                     }.build().show(fragmentManager!!)
 
             }
-        }else{
+        } else {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
             intent.type = "*/*"
             intent.addFlags(intent.flags or Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -368,8 +368,10 @@ class ScopedMediaPicker(
                         fileData.fileUri = docUri
                         activity.contentResolver.openInputStream(docUri).use { inputStream ->
                             fileData.fileInputStream = inputStream
+                            fileData.fileBytes = inputStream?.readBytes()
+                            onFileChoose(arrayListOf(fileData))
                         }
-                        onFileChoose(arrayListOf(fileData))
+
                     }
                 }
             }
@@ -388,18 +390,34 @@ class ScopedMediaPicker(
                                 fileData.mimeType = mimeType
                                 fileData.fileExtension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
                                 fileData.fileName = activity.getFileName(docUri)
-
+                                fileData.fileUri = docUri
                                 activity.contentResolver.takePersistableUriPermission(docUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 activity.contentResolver.openInputStream(docUri).use { inputStream ->
                                     fileData.fileInputStream = inputStream
+                                    fileData.fileBytes = inputStream?.readBytes()
+                                    list.add(fileData)
+
+                                    onFileChoose(list)
                                 }
                             }
-                            fileData.fileUri = docUri
+                        }
+                    } else if (data?.data != null) {
+                        val docUri = data.data
 
-                            list.add(fileData)
+                        activity.contentResolver.takePersistableUriPermission(docUri!!, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        val fileData = FileData()
+
+                        val mimeType = activity.contentResolver.getType(docUri)
+                        fileData.mimeType = mimeType
+                        fileData.fileExtension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
+                        fileData.fileName = activity.getFileName(docUri)
+                        fileData.fileUri = docUri
+                        activity.contentResolver.openInputStream(docUri).use { inputStream ->
+                            fileData.fileInputStream = inputStream
+                            fileData.fileBytes = inputStream?.readBytes()
+                            onFileChoose(arrayListOf(fileData))
                         }
 
-                        onFileChoose(list)
                     }
                 }
             }
