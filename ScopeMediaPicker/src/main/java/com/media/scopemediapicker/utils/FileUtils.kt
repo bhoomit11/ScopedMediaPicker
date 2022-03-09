@@ -92,7 +92,7 @@ suspend fun Activity.compressImageFile(
             }
 
             scaledBitmap?.recycle()
-
+            compressedPath = getScaledImagePath(this@compressImageFile, 1024, 1024, compressedPath)
             return@withContext if (shouldOverride) path else compressedPath
         } catch (e: Throwable) {
             e.printStackTrace()
@@ -142,7 +142,6 @@ fun Activity.getVideoPath(uri: Uri): String? {
         if (isExternalStorageDocument(uri)) {
             val docId = DocumentsContract.getDocumentId(uri)
             val split = docId.split(":").toTypedArray()
-            val type = split[0]
             val fullPath = getPathFromExtSD(split)
             return if (fullPath !== "") {
                 fullPath
@@ -241,14 +240,15 @@ fun Activity.getVideoPath(uri: Uri): String? {
             if (isGoogleDriveUri(uri)) {
                 return getDriveFilePath(uri, this)
             }
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-
-                // return getFilePathFromURI(context,uri);
-                copyFileToInternalStorage(uri, "userfiles", this)
-                // return getRealPathFromURI(context,uri);
-            } else {
-                getDataColumn(this, uri, null, null)
-            }
+            return copyFileToInternalStorage(uri, "userfiles", this)
+//            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+//
+//                // return getFilePathFromURI(context,uri);
+//                copyFileToInternalStorage(uri, "userfiles", this)
+//                // return getRealPathFromURI(context,uri);
+//            } else {
+//                getDataColumn(this, uri, null, null)
+//            }
         }
         if ("file".equals(uri.scheme, ignoreCase = true)) {
             return uri.path
