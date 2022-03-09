@@ -195,7 +195,7 @@ class ScopedMediaPicker(
         val pickIntent = Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
 
         val takeVideoIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
-        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, setImageUri())
+        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, setUri(MEDIA_TYPE_VIDEO))
 
 
         intentList = addIntentsToList(intentList, pickIntent)
@@ -227,7 +227,7 @@ class ScopedMediaPicker(
 
         if (actionType and ACTION_TYPE_CAMERA == ACTION_TYPE_CAMERA) {
             val takePhotoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-            takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, setImageUri())
+            takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, setUri())
             intentList = addIntentsToList(intentList, takePhotoIntent)
 
         }
@@ -269,15 +269,17 @@ class ScopedMediaPicker(
     /**
      * Set default URI for capture image
      */
-    private fun setImageUri(): Uri? {
+    private fun setUri(type: Int = MEDIA_TYPE_IMAGE): Uri? {
         val folder = File("${activity?.getExternalFilesDir(Environment.DIRECTORY_DCIM)}")
         if (!folder.exists()) {
             folder.mkdirs()
         }
 
-        val file =
+        val file = if (type == MEDIA_TYPE_IMAGE) {
             File(folder, "${activity?.getApplicationName()}_${System.currentTimeMillis()}.png")
-
+        } else {
+            File(folder, "${activity?.getApplicationName()}_${System.currentTimeMillis()}.mp4")
+        }
         if (file.exists())
             file.delete()
         file.createNewFile()
