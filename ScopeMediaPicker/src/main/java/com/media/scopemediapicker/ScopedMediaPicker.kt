@@ -39,6 +39,7 @@ class ScopedMediaPicker(
 
     companion object {
         const val REQ_CAPTURE = 1101
+        const val REQ_READ_STORAGE = 1100
         const val RES_IMAGE = 1102
         const val RES_MULTI_IMAGE = 1103
         const val RES_VIDEO = 1104
@@ -74,7 +75,7 @@ class ScopedMediaPicker(
         FilePaths(fragment?.requireContext() ?: activity as Context)
     }
 
-    private val permissions = arrayOf(Manifest.permission.CAMERA)
+    private val permissions = arrayOf(Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE)
 
     fun startMediaPicker(mediaType: Int, actionType: Int, onMediaChooseMultiple: (pathList: ArrayList<String>, type: Int) -> Unit) {
         this.mediaType = mediaType
@@ -327,13 +328,9 @@ class ScopedMediaPicker(
             )
                 pendingPermissions.add(permission)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val array = arrayOfNulls<String>(pendingPermissions.size)
-            pendingPermissions.toArray(array)
-            activity?.requestPermissions(array, REQ_CAPTURE)
-        }
-
-
+        val array = arrayOfNulls<String>(pendingPermissions.size)
+        pendingPermissions.toArray(array)
+        activity?.requestPermissions(array, REQ_CAPTURE)
     }
 
 
