@@ -217,7 +217,6 @@ class ScopedMediaPicker(
 
     private fun getPickImageIntent(): Intent? {
         var chooserIntent: Intent? = null
-
         var intentList: MutableList<Intent> = ArrayList()
 
         val pickIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
@@ -350,8 +349,13 @@ class ScopedMediaPicker(
             RES_MULTI_IMAGE -> {
                 if (resultCode == Activity.RESULT_OK) {
                     if (data != null) {
-                        val imagePathList = activity.getMediaImagePaths(data)
-                        imagePathList.let { onMediaChoose(it, MEDIA_TYPE_IMAGE) }
+                        val exceptionHandler = CoroutineExceptionHandler { _, t ->
+                            t.printStackTrace()
+                        }
+                        GlobalScope.launch(Dispatchers.Main + exceptionHandler) {
+                            val imagePathList = activity.getMediaImagePaths(data)
+                            imagePathList.let { onMediaChoose(it, MEDIA_TYPE_IMAGE) }
+                        }
                     }
                 }
             }

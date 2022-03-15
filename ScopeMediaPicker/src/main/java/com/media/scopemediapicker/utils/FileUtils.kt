@@ -489,7 +489,7 @@ fun getRealDataColumn(context: Context, uri: Uri?, selection: String?, selection
     return null
 }
 
-fun Activity.getMediaImagePaths(data: Intent): ArrayList<String> {
+suspend fun Activity.getMediaImagePaths(data: Intent): ArrayList<String> {
     try {
         // When an Image is picked
         // Get the Image from data
